@@ -43,10 +43,7 @@ self.onmessage = async function(event) {
             console.log('All text for API:', textForApi)
         } else {
             // No messages from user, or an empty array: use the system instruction and a default user prompt
-            textForApi = [
-                systemInstructionMessage,
-                { role: "user", content: "What model are you?" } // Default user prompt
-            ];
+            textForApi = "What model are you?" // Default prompt
         }
 
         // --- 4. Prepare the final API payload ---
