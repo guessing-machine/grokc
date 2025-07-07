@@ -71,7 +71,7 @@ class MachineApp {
       if (['temperature', 'presence_penalty', 'top_p'].includes(key)) {
         const numValue = parseFloat(value);
         this.settings.llm[key] = isNaN(numValue) ? value : numValue;
-      } else if (['max_completion_tokens'].includes(key)) {
+      } else if (['max_tokens'].includes(key)) {
         const numValue = parseInt(value, 10);
         this.settings.llm[key] = isNaN(numValue) ? value : numValue;
       } else {
@@ -302,10 +302,11 @@ class MachineApp {
     
     try {
       const cmjMessages = platoHtmlToCmj(htmlContent);
+      const multilogText = platoHtmlToPlatoText(htmlContent);
       const workerPayload = {
         config: this.settings.machine,
         settings: this.settings.llm,
-        messages: cmjMessages
+        messages: multilogText
       };
       
       console.log('Launching LLM worker with payload:', workerPayload);
@@ -343,13 +344,13 @@ class MachineApp {
   _processLlmResponse = (llmResponseData, originalCmjMessages) => {
     try {
       console.log('Worker task successful. LLM Response:', llmResponseData);
-      if (!llmResponseData || !llmResponseData.content || llmResponseData.content.length === 0) {
+      if (!llmResponseData || !llmResponseData.length === 0) {
         throw new Error('LLM response is missing message content.');
       }
       
-      const desoupedText = llmSoupToText(llmResponseData.content);
+      const desoupedText = llmSoupToText(llmResponseData);
       const newCmjMessage = {
-        role: llmResponseData.role,
+        role: 'assistant',
         name: this.settings.machine.name,
         content: desoupedText
       };

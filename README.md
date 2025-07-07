@@ -1,1 +1,1 @@
-### Guessing Machine (openai)
+### Guessing Machine (grok completions)

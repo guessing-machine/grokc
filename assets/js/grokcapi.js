@@ -22,7 +22,7 @@ self.onmessage = async function(event) {
             if (!instructionResponse.ok) {
                  console.log(`Worker: HTTP error fetching instruction! status: ${instructionResponse.status}. Using default instruction.`);
                  // Default instruction if fetching fails or file not found
-                 instructionText = "You are a helpful assistant.";
+                 instructionText = "I am an assistant by the name 'Guessing-Machine'.";
             } else {
                 instructionText = (await instructionResponse.text()).trim();
                 console.log('Worker: Instruction fetched successfully.');
@@ -30,21 +30,20 @@ self.onmessage = async function(event) {
             }
         } catch (fetchError) {
             console.error('Worker: Error during instruction file fetch:', fetchError.message, '. Using default instruction.');
-            instructionText = "You are a helpful assistant."; // Default instruction on any fetch error
+            instructionText = "I am an assistant by the name 'Guessing-Machine'."; // Default instruction on any fetch error
         }
 
         // --- 3. Prepare messages for the API call ---
-        const systemInstructionMessage = { role: "system", content: instructionText };
-        let messagesForApi;
+        let textForApi;
 
         // Check if the main thread sent any messages
         if (messages && Array.isArray(messages) && messages.length > 0) {
             // User provided messages: unshift/prepend the fetched system instruction
-            messagesForApi = [systemInstructionMessage, ...messages];
-            console.log('All messages for API:', messagesForApi)
+            textForApi = instructionText + '\n\n' + messages;
+            console.log('All text for API:', textForApi)
         } else {
             // No messages from user, or an empty array: use the system instruction and a default user prompt
-            messagesForApi = [
+            textForApi = [
                 systemInstructionMessage,
                 { role: "user", content: "What model are you?" } // Default user prompt
             ];
@@ -53,7 +52,7 @@ self.onmessage = async function(event) {
         // --- 4. Prepare the final API payload ---
         const defaultApiParameters = {
             model: llmSettings.model || machineConfig.llm,
-            max_tokens: llmSettings.max_tokens || 8000,
+            max_tokens: llmSettings.max_tokens || 8192,
             temperature: llmSettings.temperature || 1.0,
             top_p: llmSettings.top_p || 0.9,
             modalities: ["text"],
@@ -65,7 +64,7 @@ self.onmessage = async function(event) {
         // Merge default parameters, then incoming user parameters (which might override temp, max_tokens, etc.),
         const finalApiPayload = {
             ...defaultApiParameters,
-            messages: messagesForApi      // Ensure our carefully constructed messages array is used
+            prompt: textForApi      // Ensure our carefully constructed messages array is used
         };
         console.log('Worker: Here is the final API payload:', finalApiPayload);
 
@@ -99,7 +98,7 @@ self.onmessage = async function(event) {
         console.log('Worker: API call successful, response:', apiData);
         const choice = apiData.choices[0]
         console.log('Worker: API choice:', choice);
-        const msgResponse = choice.message // grok API response text is in choices[0].message.content
+        const msgResponse = choice.text // grok API response text is in choices[0].message.content
 
         // Send the successful result back to the main thread
         self.postMessage({ type: 'success', data: msgResponse });
