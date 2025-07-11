@@ -122,8 +122,6 @@ class MachineApp {
     });
   }
   
-  // --- Event Handlers & Core Logic Methods ---
-  
   _handleTokenSave = () => {
     const tokenInputVal = this.elements.tokenPopupInput.value;
     if (tokenInputVal && tokenInputVal.trim()) {
@@ -231,6 +229,10 @@ class MachineApp {
       event.preventDefault();
       this._saveToFile();
     }
+    if (event.ctrlKey && event.altKey && event.key === 'Enter') {
+      event.preventDefault();
+      this._saveHtmlToFile(); // New: Save as HTML
+    }
     if (event.altKey && event.shiftKey) {
       event.preventDefault();
       this.runLlm();
@@ -258,6 +260,34 @@ class MachineApp {
       if (err.name !== 'AbortError') {
         console.error('Error saving file:', err);
         alert(`Could not save file: ${err.message}`);
+      }
+    }
+  };
+  
+  /**
+   * Saves the dialogue's inner HTML content to a local .html file.
+   */
+  _saveHtmlToFile = async () => {
+    const htmlToSave = this.elements.dialogueWrapper.innerHTML || '';
+    if (!htmlToSave.trim()) {
+      alert('Dialogue is empty. Nothing to save.');
+      return;
+    }
+    try {
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: 'multilogue.html',
+        types: [{
+          description: 'HTML Files',
+          accept: { 'text/html': ['.html', '.htm'] },
+        }],
+      });
+      const writable = await fileHandle.createWritable();
+      await writable.write(htmlToSave);
+      await writable.close();
+    } catch (err) {
+      if (err.name !== 'AbortError') {
+        console.error('Error saving HTML file:', err);
+        alert(`Could not save HTML file: ${err.message}`);
       }
     }
   };
